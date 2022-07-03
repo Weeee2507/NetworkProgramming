@@ -1,3 +1,6 @@
+#ifndef LINE_H
+#define LINE_H
+
 #define MAX 1024
 typedef struct node
 {
@@ -88,3 +91,4 @@ node_a *loadData(char *filename){
 	printf("Successfully loaded %d account(s)\n",count);
 	return head;
 }
+#endif

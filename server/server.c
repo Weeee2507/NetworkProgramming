@@ -62,10 +62,10 @@ int main(int argc, const char *argv[]) {
         case 1:
           // show all clients
           printf("\n");
-          printf("Username\tPass\t\tFolder\n");
+          printf("%-17s%-25s%-17s\n", "Username", "Pass", "Folder");
 
           for(node_a *p = account_list; p != NULL; p = p->next) {
-            printf("%s\t\t%s\t\t%s\n", p->username, p->pass, p->folder);
+            printf("%-17s%-25s%-17s\n", p->username, p->pass, p->folder);
           }
           printf("\n");
           break;
