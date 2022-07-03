@@ -5,7 +5,7 @@ enum msg_type{
     cd,
     upload,
     download,
-    mkdir,
+    mkdir_,
     rm
 };
 
@@ -299,7 +299,7 @@ void client_process(int sock, char *buffer, char **path) {
   } else if (begin_with(command, "upload")) {
     MSG_TYPE = upload;
   } else if (begin_with(command,"mkdir")) {
-    MSG_TYPE = mkdir;
+    MSG_TYPE = mkdir_;
   } else if (begin_with(command,"rm")){
     MSG_TYPE = rm;
   } else if (begin_with(command, "help")) {
@@ -319,7 +319,7 @@ void client_process(int sock, char *buffer, char **path) {
     case upload:
         client_upload(sock, buffer, context);
         break;
-    case mkdir:
+    case mkdir_:
         client_mkdir(sock,buffer,context);
         break;
     case rm:

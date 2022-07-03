@@ -5,12 +5,12 @@
 
 enum msg_type{
     register_,
-    login,
+    login_,
     ls,
     cd,
     upload,
     download,
-    mkdir,
+    mkdir_,
     rm
 };
 
@@ -129,7 +129,7 @@ void account_process(int recfd, char *message, node_a *list, int *login, char *f
   if (begin_with(command, "register")) {
     MSG_TYPE = register_;
   } else if (begin_with(command, "login")) {
-    MSG_TYPE = login;
+    MSG_TYPE = login_;
   }
 
   switch(MSG_TYPE){
@@ -137,7 +137,7 @@ void account_process(int recfd, char *message, node_a *list, int *login, char *f
         server_register(recfd, list, username, password, filename, response);
         respond(recfd, response);
         break;
-    case login:
+    case login_:
         server_login(recfd, list, username, password, login, response);
         respond(recfd, response);
         break;
@@ -513,7 +513,7 @@ void server_process(int recfd, char *full_command, char **current_path) {
   } else if (begin_with(command, "upload")) {
     MSG_TYPE = upload;
   } else if (begin_with(command,"mkdir")) {
-    MSG_TYPE = mkdir;
+    MSG_TYPE = mkdir_;
   } else if (begin_with(command,"rm")){
     MSG_TYPE = rm;
   }
@@ -533,7 +533,7 @@ void server_process(int recfd, char *full_command, char **current_path) {
     case upload:
         server_upload(recfd, context, current_path);
         break;
-    case mkdir:
+    case mkdir_:
         server_mkdir(recfd, context, response, current_path);
         respond(recfd,response);
         break;
