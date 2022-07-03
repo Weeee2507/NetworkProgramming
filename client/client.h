@@ -7,6 +7,17 @@ int is_regular_file(const char *path) {
     return S_ISREG(path_stat.st_mode);
 }
 
+unsigned long hash(char *str){
+    unsigned long hash = 5381;
+    int c;
+    
+    while (c=*str++){
+         hash = ((hash << 5) + hash) + c;
+    }
+    
+    return hash;
+}
+
 int begin_with(const char *str, const char *pre) {
   size_t lenpre = strlen(pre);
   size_t lenstr = strlen(str);

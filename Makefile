@@ -5,6 +5,4 @@ server/server: server/server.c
 
 client/client: client/client.c
 	gcc client/client.c -o client/client
-	
-clean:
-	rm client/client.o client/client server/server.o server/server
+

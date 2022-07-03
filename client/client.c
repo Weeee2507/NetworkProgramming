@@ -70,13 +70,15 @@ int main(int argc, const char *argv[]) {
             printf("Password: ");
             fgets(password,MAX,stdin);
             password[strcspn(password, "\n")] = '\0';
-
-            char *msg = malloc(strlen(username)+strlen(password)+50);
+            
+            sprintf(password,"%ld",hash(password));
+            
+            char *msg = malloc(strlen(username)+strlen(password)*1024);
             strcpy(msg,"register|");
             strcat(msg,username);
             strcat(msg,"|");
             strcat(msg,password);
-
+            
             // send username to server
             if (0 >= (bytes_sent = send(sock,msg,strlen(msg),0))) {
                 perror("\nCan't send to server");
@@ -117,8 +119,10 @@ int main(int argc, const char *argv[]) {
     			printf("Password: ");
     			fgets(password,MAX,stdin);
     			password[strcspn(password, "\n")] = '\0';
+    			
+    			sprintf(password,"%ld",hash(password));
 
-    			char *msg = malloc(strlen(username)+strlen(password)+50);
+    			char *msg = malloc(strlen(username)+strlen(password)*1024);
     			strcpy(msg,"login|");
     			strcat(msg,username);
     			strcat(msg,"|");
@@ -129,7 +133,6 @@ int main(int argc, const char *argv[]) {
       				perror("\nCan't send to server");
       				return 0;
     			}
-
 
     			// receive server reply
     			if (0 >= (bytes_received = recv(sock,buff,MAX-1,0))) {
