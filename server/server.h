@@ -3,6 +3,17 @@
 
 #include "account.h"
 
+enum msg_type{
+    register_,
+    login,
+    ls,
+    cd,
+    upload,
+    download,
+    mkdir,
+    rm
+};
+
 int dem(char *s,char t)
 {
   int dem=0;
@@ -112,19 +123,30 @@ void account_process(int recfd, char *message, node_a *list, int *login, char *f
   char *username = strtok(NULL, delim);
   char *password = strtok(NULL, delim);
   char *response = malloc(sizeof(char) * 1024);
+  enum msg_type MSG_TYPE;
 
   // Process
   if (begin_with(command, "register")) {
-    server_register(recfd, list, username, password, filename, response);
-    respond(recfd, response);
+    MSG_TYPE = register_;
   } else if (begin_with(command, "login")) {
-    server_login(recfd, list, username, password, login, response);
-    respond(recfd, response);
-  } else {
-    strcpy(response, "No such command: ");
-    strcat(response, command);
-    // gửi thông điệp (phản hồi) lại client
-    respond(recfd, response);
+    MSG_TYPE = login;
+  }
+
+  switch(MSG_TYPE){
+    case register_:
+        server_register(recfd, list, username, password, filename, response);
+        respond(recfd, response);
+        break;
+    case login:
+        server_login(recfd, list, username, password, login, response);
+        respond(recfd, response);
+        break;
+    default:
+        strcpy(response, "No such command: ");
+        strcat(response, command);
+        // gửi thông điệp (phản hồi) lại client
+        respond(recfd, response);
+        break;
   }
 
   // Cleanup
@@ -428,69 +450,6 @@ void server_rm(int recfd, char *target_file, char *response, char **current_path
   free(full_path);
 }
 
-void server_move(int recfd, char *target_file, char **current_path) {
-  char *full_path = malloc(strlen(*current_path) + strlen(target_file) + 2);
-  strcpy(full_path, *current_path);
-  strcat(full_path, "/");
-  strcat(full_path, target_file);
-
-  char buffer[MAX];
-  strcpy(buffer,"move to");
-  respond(recfd,buffer);
-
-  memset(buffer,'\0',MAX);
-  int byte_receive;
-  if ((byte_receive=(recv(recfd, buffer, MAX, 0))) <= 0) {
-    fprintf(stderr, "Can't receive packet\n");
-    free(full_path);
-    close(recfd);
-    return;
-  }
-
-  buffer[byte_receive] = '\0';
-  char *new_path = malloc(strlen(buffer)+strlen(target_file)+2);
-  strcpy(new_path, buffer);
-  strcat(new_path, "/");
-  strcat(new_path, target_file);
-
-  FILE *fp1, *fp2;
-  fp1 = fopen(full_path, "r");
-  /* open the destination file in write mode */
-  fp2 = fopen(new_path, "w");
-
-  /* error handling */
-  if (!fp1) {
-          printf("Unable to open source file to read!!\n");
-          respond(recfd,"system|server error\n");
-          fclose(fp2);
-          return;
-  }
-
-  if (!fp2) {
-          printf("Unable to open target file to write\n");
-          respond(recfd,"system|server error\n");
-          return;
-  }
-
-  int ch;
-  /* copying contents of source file to target file */
-  while ((ch = fgetc(fp1)) != EOF) {
-          fputc(ch, fp2);
-  }
-
-  /* closing the opened files */
-  fclose(fp1);
-  fclose(fp2);
-
-  /* removing the source file */
-  remove(full_path);
-  free(full_path);
-  free(new_path);
-  printf("Success to move file\n");
-  respond(recfd,"Move success!");
-  return;
-}
-
 void server_mkdir(int recfd,char *new_dir, char *response, char **current_path){
     // Handle empty arg and . and ..
   // xử lý đối số trống . và ..
@@ -542,35 +501,53 @@ void server_process(int recfd, char *full_command, char **current_path) {
   char *command = strtok(full_command, delim); //lấy phần đầu của command (ls,cd,...)
   char *context = strtok(NULL, delim); //phần sau của command
   char *response = malloc(sizeof(char) * 1024);
+  enum msg_type MSG_TYPE;
 
   // Process
   if (begin_with(command, "ls")) {
-    server_ls(recfd, response, current_path);
-    respond(recfd, response);
+    MSG_TYPE = ls;
   } else if (begin_with(command, "cd")) {
-    server_cd(recfd, context, response, current_path);
-    respond(recfd, response);
+    MSG_TYPE = cd;
   } else if (begin_with(command, "download")) {
-    server_download(recfd, context, current_path);
+    MSG_TYPE = download;
   } else if (begin_with(command, "upload")) {
-    server_upload(recfd, context, current_path);
+    MSG_TYPE = upload;
   } else if (begin_with(command,"mkdir")) {
-    server_mkdir(recfd, context, response, current_path);
-    respond(recfd,response);
+    MSG_TYPE = mkdir;
   } else if (begin_with(command,"rm")){
-    server_rm(recfd,context,response,current_path);
-    respond(recfd,response);
-  } else if (begin_with(command,"move"))
-  {
-    server_move(recfd,context,current_path);
-    // respond(recfd,response)
-  } else {
-    strcpy(response, "No such command: ");
-    strcat(response, command);
-    // gửi thông điệp (phản hồi) lại client
-    respond(recfd, response);
+    MSG_TYPE = rm;
   }
 
+  switch(MSG_TYPE){
+    case ls:
+        server_ls(recfd, response, current_path);
+        respond(recfd, response);
+        break;
+    case cd:
+        server_cd(recfd, context, response, current_path);
+        respond(recfd, response);
+        break;
+    case download:
+        server_download(recfd, context, current_path);
+        break;
+    case upload:
+        server_upload(recfd, context, current_path);
+        break;
+    case mkdir:
+        server_mkdir(recfd, context, response, current_path);
+        respond(recfd,response);
+        break;
+    case rm:
+        server_rm(recfd,context,response,current_path);
+        respond(recfd,response);
+        break;
+    default:
+        strcpy(response, "No such command: ");
+        strcat(response, command);
+        // gửi thông điệp (phản hồi) lại client
+        respond(recfd, response);
+        break;
+  }
   // Cleanup
   free(response);
 }

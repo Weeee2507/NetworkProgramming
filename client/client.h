@@ -1,5 +1,14 @@
 #define MAX 1024
 
+enum msg_type{
+    ls,
+    cd,
+    upload,
+    download,
+    mkdir,
+    rm
+};
+
 int is_regular_file(const char *path) {
     struct stat path_stat;
 
@@ -10,11 +19,11 @@ int is_regular_file(const char *path) {
 unsigned long hash(char *str){
     unsigned long hash = 5381;
     int c;
-    
+
     while (c=*str++){
          hash = ((hash << 5) + hash) + c;
     }
-    
+
     return hash;
 }
 
@@ -271,55 +280,6 @@ void client_rm(int sock, char *buffer, char *target_file){
   }
 }
 
-void client_move(int sock, char *buffer, char *target_file) {
-  char response[MAX];
-  char target_path[MAX];
-
-  // send command
-  if (send(sock, buffer, strlen(buffer) + 1, 0) == -1) {
-    fprintf(stderr, "can't send packet");
-    perror("");
-    return;
-  }
-
-  // receive response
-  if (recv(sock, response, sizeof(response), 0) == -1) {
-    fprintf(stderr, "can't receive packet");
-    perror("");
-    return;
-  }
-  if (begin_with(response, "system")) {
-    printf("%s\n", &response[7]);
-    return;
-  }
-
-  // send target folder
-  printf("Target directory path: ");
-  fgets(target_path,MAX,stdin);
-  target_path[strcspn(target_path,"\n")] = '\0';
-  if (send(sock, target_path, strlen(target_path) + 1, 0) == -1) {
-    fprintf(stderr, "can't send packet");
-    perror("");
-    return;
-  }
-
-  // receive response
-  memset(response, '\0', MAX);
-  if (recv(sock, response, sizeof(response), 0) == -1) {
-    fprintf(stderr, "can't receive packet");
-    perror("");
-    return;
-  }
-
-  if (begin_with(response, "system")) {
-    printf("%s\n", &response[7]);
-    return;
-  }
-
-  printf("%s: Moved\n",target_file);
-  return;
-}
-
 void client_process(int sock, char *buffer, char **path) {
   // Prepare
   char *full_command = malloc(strlen(buffer) + 1);
@@ -327,26 +287,47 @@ void client_process(int sock, char *buffer, char **path) {
   char *delim = " ";
   char *command = strtok(full_command, delim);
   char *context = strtok(NULL, delim);
+  enum msg_type MSG_TYPE;
 
   // Process
   if (begin_with(command, "ls")) {
-    client_ls(sock, buffer);
+    MSG_TYPE = ls;
   } else if (begin_with(command, "cd")) {
-    client_cd(sock, buffer, path);
+    MSG_TYPE = cd;
   } else if (begin_with(command, "download")) {
-    client_download(sock, buffer, context);
+    MSG_TYPE = download;
   } else if (begin_with(command, "upload")) {
-    client_upload(sock, buffer, context);
+    MSG_TYPE = upload;
   } else if (begin_with(command,"mkdir")) {
-    client_mkdir(sock,buffer,context);
-  } else if (begin_with(command,"rm")) {
-    client_rm(sock,buffer,context);
-  } else if (begin_with(command,"move")) {
-    client_move(sock,buffer,context);
+    MSG_TYPE = mkdir;
+  } else if (begin_with(command,"rm")){
+    MSG_TYPE = rm;
   } else if (begin_with(command, "help")) {
     display_help();
-  } else {
-    printf("No such command: %s\nType \"help\" for list of commands\n", buffer);
+  }
+
+  switch(MSG_TYPE){
+    case ls:
+        client_ls(sock, buffer);
+        break;
+    case cd:
+        client_cd(sock, buffer, path);
+        break;
+    case download:
+        client_download(sock, buffer, context);
+        break;
+    case upload:
+        client_upload(sock, buffer, context);
+        break;
+    case mkdir:
+        client_mkdir(sock,buffer,context);
+        break;
+    case rm:
+        client_rm(sock,buffer,context);
+        break;
+    default:
+        printf("No such command: %s\nType \"help\" for list of commands\n", buffer);
+        break;
   }
 
   // Cleanup
